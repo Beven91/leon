@@ -19,14 +19,25 @@
         this.host = location.host;
         this.initCleanOpenUrl();
         this.listener('mousedown', this.cleanCoverLink, true);
-        window.addEventListener('load', this.bind(this.cleanInit));
+        window.addEventListener('load', this.bind(this.onReady));
+        this.predelay(this.cleanInit, 500)
+    }
+
+    /**
+     * 技能0：窗口加载完毕
+     */
+    Leon.prototype.onReady = function() {
+        this.delay(this.cleanInit, 500);
     }
 
     /**
      * 技能一：初始化清除悬浮链接
      */
     Leon.prototype.cleanInit = function() {
+        //轮询
         this.oneByOne();
+        //剔除悬层广告
+        this.cleanCoverAdvertisment();
     }
 
     /**
@@ -46,16 +57,52 @@
     /**
      * 技能三：window.open监听
      */
-    Leon.prototype.initCleanOpenUrl = function(url) {
+    Leon.prototype.initCleanOpenUrl = function() {
         var context = this;
         setTimeout(function() {
             var domScript = document.createElement("script");
-            domScript.textContent = '(' + context.openOverride().toString() + '());';
+            domScript.textContent = '(' + context.getOpenOverride().toString() + '());';
             document.body.appendChild(domScript);
-        }, 50);
+        }, 40);
     }
 
-    Leon.prototype.openOverride = function() {
+    /**
+     * 技能四: 清除悬浮广告
+     */
+    Leon.prototype.cleanCoverAdvertisment = function() {
+        var children = document.body.children;
+        var item = null;
+        var cleanList = [];
+        for (var i = 0, k = children.length; i < k; i++) {
+            item = children[i];
+            if (item.style.position == 'fixed' && this.isOutLinkOwner(item)) {
+                cleanList.push(item);
+            }
+        }
+        for (var i = 0, k = cleanList.length; i < k; i++) {
+            item = cleanList[i];
+            item.parentElement.removeChild(item);
+        }
+    }
+
+    /**
+     * 判断制定内容是否包含外链
+     */
+    Leon.prototype.isOutLinkOwner = function(dom) {
+        var links = dom ? dom.getElementsByTagName("a") : [];
+        var outCount = 0;
+        for (var i = 0, k = links.length; i < k; i++) {
+            if (this.isOutLink(links[i])) {
+                outCount++;
+            }
+        }
+        return outCount == links.length;
+    }
+
+    /**
+     * 返回一个widow.open函数外链跳转监听代码函数
+     */
+    Leon.prototype.getOpenOverride = function() {
         return function() {
             var host = location.host;
             var originOpen = window.open;
@@ -68,6 +115,7 @@
                 }
                 domLink.href = url;
                 if (domLink.host !== host) {
+                    console.log('拦截:' + url);
                     return {};
                 } else {
                     return originOpen.apply(window, arguments);
@@ -77,7 +125,7 @@
     }
 
     /**
-     * 技能二：轮询
+     * 本能：轮询
      */
     Leon.prototype.oneByOne = function() {
         var links = document.links;
@@ -94,7 +142,25 @@
     }
 
     /**
-     * 绑定函数
+     * 本能：迟疑
+     */
+    Leon.prototype.delay = function(handler, delay) {
+        return setTimeout(this.bind(handler), delay);
+    }
+
+    /**
+     * 本能：预设迟疑
+     */
+    Leon.prototype.predelay = function(handler, delay) {
+        var context = this;
+        var args = Array.prototype.slice.apply(arguments);
+        return function() {
+            return context.delay.apply(context, args);
+        }
+    }
+
+    /**
+     * 本能：代理
      */
     Leon.prototype.bind = function(handler) {
         var context = this;
