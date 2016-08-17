@@ -27,6 +27,7 @@
      * 技能0：窗口加载完毕
      */
     Leon.prototype.onReady = function() {
+        this.listener('DOMNodeInserted', this.bind(this.onInsertDOM));
         this.delay(this.cleanInit, 500);
     }
 
@@ -60,9 +61,14 @@
     Leon.prototype.initCleanOpenUrl = function() {
         var context = this;
         setTimeout(function() {
-            var domScript = document.createElement("script");
-            domScript.textContent = '(' + context.getOpenOverride().toString() + '());';
-            document.body.appendChild(domScript);
+            var code = '(' + context.getOpenOverride().toString() + '());';
+            if (document.body) {
+                var domScript = document.createElement("script");
+                domScript.textContent = code;
+                document.body.appendChild(domScript);
+            } else {
+                context.initCleanOpenUrl();
+            }
         }, 40);
     }
 
@@ -84,6 +90,18 @@
             item.parentElement.removeChild(item);
         }
     }
+
+    /**
+     * 技能五：监听body的元素新增，然后判断新增元素是否需要处理
+     */
+    Leon.prototype.onInsertDOM = function(ev) {
+        var target = ev.target;
+
+    }
+
+    /**
+     * 判断当前元素是否
+     */
 
     /**
      * 判断制定内容是否包含外链
