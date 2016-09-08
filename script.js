@@ -16,11 +16,15 @@
      * 初始化清道夫
      */
     Leon.prototype.init = function() {
-        this.host = location.host;
+        var host = location.host.toLowerCase();
+        var segments = host.split('.');
+        segments.shift();
+        this.host = host;
+        this.domain = segments.join('.');
         this.initCleanOpenUrl();
         this.listener('mousedown', this.cleanCoverLink, true);
         window.addEventListener('load', this.bind(this.onReady));
-        this.predelay(this.cleanInit, 500)
+        this.predelay(this.cleanInit, 500);
     }
 
     /**
@@ -96,7 +100,9 @@
      */
     Leon.prototype.onInsertDOM = function(ev) {
         var target = ev.target;
-
+        if (this.isOutLink(target)) {
+            target.href = "#";
+        }
     }
 
     /**
@@ -122,9 +128,13 @@
      */
     Leon.prototype.getOpenOverride = function() {
         return function() {
-            var host = location.host;
+            var host = location.host.toLowerCase();
             var originOpen = window.open;
+            var segments = host.split('.');
             var domLink = null;
+            var domain = null;
+            segments.shift();
+            domain = segments.join('.');
             window.open = function(url) {
                 if (!domLink) {
                     domLink = document.createElement("a");
@@ -132,7 +142,8 @@
                     document.body.appendChild(domLink);
                 }
                 domLink.href = url;
-                if (domLink.host !== host) {
+                var toHost = (domLink.host || "").toLowerCase();
+                if ((toHost !== host && toHost.indexOf(domain) < 0)) {
                     console.log('拦截:' + url);
                     return {};
                 } else {
@@ -199,10 +210,19 @@
     }
 
     /**
+     * 本能：判断是否为同类
+     * @param host
+     */
+    Leon.prototype.isSimilar = function(host) {
+        host = (host || "").toLowerCase();
+        return host == this.host || host.indexOf(this.domain) > -1;
+    }
+
+    /**
      * 本能：判断是否为一个外部链接
      */
     Leon.prototype.isOutLink = function(dom) {
-        return this.isLink(dom) && dom.host !== this.host;
+        return this.isLink(dom) && (!this.isSimilar(dom.host));
     }
 
     /**
